@@ -48,6 +48,10 @@
     const userID = Math.floor(Math.random() * 1000000);
     var allUserIds = [];
     var otherOnions = [];
+    var onions = [
+        "onion","onion-beach","onion-blue","onion-dark","onion-gold",
+        "onion-watermelon",
+      ];
     const channel = supabase.channel('player_locations', {
       config: {
         presence: { userId: userID},
@@ -268,11 +272,12 @@
     //initializing
     kaboom({
       background: [153, 204, 255],
-      //scale: scale,
       width: canvasWidth,
       height: canvasHeight + heightStretch,
+      camScale: [0.5, 0.5]
       //crisp: true,
     })
+    
     // load assets
     loadAssets()
 
@@ -312,6 +317,7 @@
       return null;
     }
     var slctId = 0;
+    var onionId = 0;
     // Set a high score cookie
     function setHighLevel(score) {
       const existingHighLevel = getCookie("highLevel");
@@ -332,26 +338,16 @@
       levelName: "Intro",
     }) => {
 
-      if (first) {
-        levelId = slctId;
-        first = false;
-        trackingLevelId = slctId;
-        channel.track({ userId: userID, level: levelId })
-      }
-      if (!first) {
-        levelId = slctId;
-        trackingLevelId = slctId;
-        channel.track({ userId: userID, level: levelId })
+      levelId = slctId;
+      trackingLevelId = slctId;
+      channel.track({ userId: userID, level: levelId })
 
-      }
-      if (levelId > highestId) {
-        highestId = levelId;
-      }
+      highestId = levelId > highestId ? levelId : highestId;
 
       //if(levelId > savedId) {
       //  setData(savedId, levelId)
       //}
-
+      //test of effency mode. this is gonna be a rough development
 
       addLevel(LEVELS[levelId ?? 0], levelConf)
       function sendNewPlayer(){
@@ -371,13 +367,11 @@
         volume: 1,
         loop: true
       })
-        var onionChoices = ["onion-red","onion-beach","onion-watermelon","onion-blue","onion-gold","onion-dark","onion"]
-        var onionChoice = Math.floor(Math.random() * onionChoices.length);
       // add a character to screen
       const onion = add([
         // list of components
         
-        sprite(onionChoices[onionChoice]),
+        sprite(onions[onionId]),
         pos(120, 40),
         area(),
         body(),
@@ -394,7 +388,8 @@
       "DROP ~ 24","Tower of Pain ~ 25","Tricky timing ~ 26","Insane Precision ~ 27",
       "It's Not That Simple ~ 28","It's a long drop ~ 29","Into the Abyss ~ 30",
       "Enter the Labyrinth ~ 31","The Labyrinth ~ 32","Onion's Demise ~ 33",
-      "Allan Mode ~ 34", "fR3EkKy dE3eKkKkkyYyY ~ 35"
+      "Allan Mode ~ 34", "fR3EkKy dE3eKkKkkyYyY ~ 35", "We're Just Getting Started ~ 36",
+      "Box of Terror ~ 37", "THE CHALLENGE"
     ];
   
     var notRColor = 255*(levelId/levelNames.length);
@@ -454,7 +449,7 @@
               coins: coins,
 
             })
-            levelId = levelId + 1
+            levelId++
             trackingLevelId = levelId;
             slctId = levelId
             setHighLevel(levelId)
@@ -474,6 +469,7 @@
 
       })
       onKeyPress("b", () => {
+        music.pause()
         go("title");
       })
       keyDown('left', () => {
@@ -486,8 +482,6 @@
 
       function moveOnion(invert, distance){
           onion.move(!invert ? distance : -distance, 0)
-          sendOnionPosition(channel, userID, onion.pos.x, onion.pos.y, levelId);
-          myCoords = { x: onion.pos.x, y: onion.pos.y, level: levelId };
       }
 
       if (isTouch()) {
@@ -557,10 +551,6 @@
         let touching = false;
         let arrowClicked = null;
         let maxJumps = 2;
-
-        if (levelId === 32) {
-          maxJumps = Infinity;
-        }
         let djRotation = 0; // Variable to track the rotation angle
         let isDjAnimating = false; // Variable to track the animation state
 
@@ -691,22 +681,16 @@
 
       }
 
-     
-
       if (levelId != 32) {
         onKeyPress("up", () => {
           play("jump")
           onion.doubleJump()
-          sendOnionPosition(channel, userID, onion.pos.x, onion.pos.y, levelId);
-          myCoords = { x: onion.pos.x, y: onion.pos.y, level: levelId };
+          
         })
       } else if (levelId == 32) {
         onKeyPress("up", () => {
           play("jump")
           onion.jump()
-          sendOnionPosition(channel, userID, onion.pos.x, onion.pos.y, levelId);
-          myCoords = { x: onion.pos.x, y: onion.pos.y, level: levelId };
-
         })
       }
 
@@ -726,6 +710,8 @@
       // camera follows player
       onion.onUpdate(() => {
         camPos(onion.pos)
+        sendOnionPosition(channel, userID, onion.pos.x, onion.pos.y, levelId);
+        myCoords = { x: onion.pos.x, y: onion.pos.y, level: levelId };
       })
     
       //spike code
@@ -751,9 +737,10 @@
       //})
     */
       //write code so that if the d button is clicked, death animation is disabled
-      onKeyPress("d", () => {
-        isDeathAnimEnabled = !isDeathAnimEnabled;
-      })
+      //onKeyPress("d", () => {
+        //isDeathAnimEnabled = !isDeathAnimEnabled;
+      //})
+      isDeathAnimEnabled = false;
       function die(){
         if (!isTouch() && isDeathAnimEnabled) {
           loops = 0;
@@ -763,7 +750,6 @@
             "coin",
             "onion-watermelon",
             "onion-beach",
-            "onion-watermelon2",
             "onion-blue",
             "onion-gold",
             "onion-dark"
@@ -802,7 +788,7 @@
         play("death")
         add([
           text("You lose"),
-          pos(onion.pos),
+          pos(onion.pos.x - 114, onion.pos.y),
           color(255, 0, 0),
           layer("ui"),
         ])
@@ -823,7 +809,7 @@
           z(-50),
         ])
       }
-      setInterval(spawnCloud, 1000000)
+      //setInterval(spawnCloud, 1000000)
 
       const score = add([
         text("Score: 0"),
@@ -912,7 +898,7 @@
         go("game", {
           levelId: levelId,
         });
-        //caleb is cool
+        //dont call me that
       });
       //}
 
@@ -929,7 +915,7 @@
         first = true;
       }
       onKeyPress("s", () => {
-        go("select");
+        go("customization");
       })
 
       onKeyPress("c", () => {
@@ -944,13 +930,22 @@
         pos(width() / 2 - 464, height() * 0.10),
       ])
 
+      const skinsBtn = add([
+        sprite("skinsBtn"),
+        layer("title"),
+        "skins",
+        fixed(),
+        area(),
+        pos(width() / 2 - 309, height() * 0.85),
+      ])
+
       const startBtn = add([
         sprite("startbtn"),
         layer("title"),
         "start",
         fixed(),
         area(),
-        pos(width() / 2 - 255, height() * 0.85),
+        pos(width() / 2 - 201, height() * 0.85),
       ])
 
       const lvlSelect = add([
@@ -959,13 +954,13 @@
         "lvlSelect",
         fixed(),
         area(),
-        pos(width() / 2 + 153, height() * 0.85),
+        pos(width() / 2 + 207, height() * 0.85),
       ])
 
       add([
         text("PLAY"),
         fixed(),
-        pos(width() / 2 - 141, height() * 0.87)
+        pos(width() / 2 - 87, height() * 0.87)
       ])
 
       onClick("start", () => {
@@ -979,6 +974,10 @@
       onClick("lvlSelect", () => {
         go("select");
       })
+
+      onClick("skins", () => {
+        go("skins");
+      })
       //registers touch 
       if (isTouch()) {
         onTouchStart((id, pos) => {
@@ -987,6 +986,9 @@
           }
           if (lvlSelect.hasPoint(pos)) {
             go("select");
+          }
+          if (skins.hasPoint(pos)) {
+            go("skins");
           }
         })
       }
@@ -1009,7 +1011,11 @@
       if (slctId == highestId) {
         add([
           sprite("lockedarrowr"),
-          pos(width() * 0.7 - 32, height() / 2 - 64),
+          pos(width() * 0.65 - 32, height() / 2 - 64),
+        ])
+        add([
+          sprite("lockedarrowr"),
+          pos(width() * 0.8 - 32, height() / 2 - 64),
         ])
       }
 
@@ -1051,14 +1057,28 @@
         "l",
 
         area({scale: 2, }),
-        pos(width() * 0.3 - 32, height() / 2 - 64),
+        pos(width() * 0.35 - 32, height() / 2 - 64),
       ])
       if (slctId < highestId) {
         var rightArrow = add([
           sprite("arrowr"),
           "r",
           area({scale: 2, }),
-          pos(width() * 0.7 - 32, height() / 2 - 64),
+          pos(width() * 0.65 - 32, height() / 2 - 64),
+        ])
+      }
+      const superLeftArrow = add([
+        sprite("arrowl"),
+        "sl",
+        area({scale: 2, }),
+        pos(width() * 0.2 - 32, height() / 2 - 64),
+      ])
+      if (slctId < highestId) {
+        var superRightArrow = add([
+          sprite("arrowr"),
+          "sr",
+          area({scale: 2, }),
+          pos(width() * 0.8 - 32, height() / 2 - 64),
         ])
       }
       if (isTouch()) {
@@ -1101,6 +1121,19 @@
           }
         }
       })
+      onClick("sr", () => {
+        if (slctId + 10 <= LEVELS.length - 1) {
+          if (slctId + 10 <= highestId) {
+            slctId += 10;
+          } else {
+            slctId = highestId;
+          }
+          go("select");
+        } else {
+          slctId = highestId;
+          go("select");
+        }
+      })
       onClick("b", () => {
         go("title");
       });
@@ -1109,6 +1142,14 @@
           slctId--;
           go("select");
         }
+      })
+      onClick("sl", () => {
+        if (slctId - 10 >= 0) {
+          slctId -= 10;
+        } else {
+          slctId = 0;
+        }
+        go("select");
       })
 
       onClick("btn", () => {
@@ -1146,11 +1187,80 @@
         text("Caleb - Lead UI Designer"),
         pos(80, height() * 0.55),
       ])
+      //no
       add([
         text("Eli - Lead App Developer"),
         pos(80, height() * 0.65),
       ])
 
+
+    })
+
+    scene("skins", () => {
+      onKeyPress('b', () => {
+        go("title");
+      })
+      
+      add([
+         text("Customization", {size: 120}),
+         layer("title"),
+         color(255, 255, 255),
+         fixed(),
+         pos(width() / 2 - 468, height() * 0.05),
+       ])
+
+       const skinSelectBtn = add([
+        // list of components
+        sprite("lvlbtn"),
+        "btn",
+        pos(width() / 2 - 128, height() / 2 - 128),
+        area(),
+
+      ])
+      const onionSelect = add([
+        // list of components
+        sprite(onions[onionId]),
+        "btn",
+        pos(width() / 2 - 38, height() / 2 - 50),
+        area(),
+
+      ])
+
+      const leftArrow = add([
+        sprite("arrowl"),
+        "l",
+
+        area({scale: 2, }),
+        pos(width() * 0.3 - 32, height() / 2 - 64),
+      ])
+      
+      var rightArrow = add([
+          sprite("arrowr"),
+          "r",
+          area({scale: 2, }),
+          pos(width() * 0.7 - 32, height() / 2 - 64),
+        ])
+
+      onClick("r", () => {
+        if(onionId == (onions.length - 1)){
+          onionId = 0;
+        } else {
+          onionId++;
+        }
+        go("skins");
+      })
+      onClick("l", () => {
+        if(onionId == 0){
+          onionId = (onions.length - 1);
+        } else {
+          onionId--;
+        }
+        go("skins");
+      })
+
+      onClick("btn", () => {
+        go("game");
+      })
 
     })
     var highestId = 0;
@@ -1253,9 +1363,14 @@
       });
     }) 
     */
+
+    
+    
     // if ((window.matchMedia('(display-mode: fullscreen)').matches || window.navigator.fullscreen) || (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone)) {
     go("title");
     // }
+
+    
 
   </script>
 

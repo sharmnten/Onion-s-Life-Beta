@@ -35,6 +35,7 @@ export default function loadAssets() {
   loadSprite("darrow", "sprites/darrow.png")
   loadSprite("fake", "sprites/fake.png")
   loadSprite("dj", "sprites/dj.png")
+  loadSprite("skinsBtn", "sprites/skinsBtn.png")
   // load sound
   loadSound("OverworldlyFoe", "sounds/OtherworldlyFoe.mp3")
   loadSound("death", "sounds/bug.mp3")
@@ -50,4 +51,5 @@ export default function loadAssets() {
   loadSprite("onion-blue","sprites/onion-blue.png")
   loadSprite("onion-gold","sprites/onion-gold.png")
   loadSprite("onion-dark","sprites/onion-dark.png")
+  
 }
